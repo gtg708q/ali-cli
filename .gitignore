@@ -1,0 +1,36 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+*.egg
+build/
+dist/
+.eggs/
+
+# Virtualenvs
+.venv/
+venv/
+env/
+
+# Editors
+.vscode/
+.idea/
+*.swp
+.DS_Store
+
+# Local runtime state (users shouldn't check in their sessions)
+.ali-cli/
+downloads/
+REPAIR-NEEDED.md
+
+# Local secrets
+.env
+secrets/
+*.pem
+*.key
+
+# Test / coverage
+.pytest_cache/
+.coverage
+htmlcov/
