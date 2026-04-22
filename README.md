@@ -30,6 +30,62 @@ CLI tool for automating Alibaba.com buyer-side operations: conversations, messag
 
 ---
 
+## What it costs
+
+The only paid dependency is **Browser Use** (the cloud browser used for
+OTP login). Everything else runs locally and is free.
+
+Browser Use bills two lines per session: a flat **`browserCost`** (~$0.002
+per session) and a **`proxyCost`** for residential proxy data (~$0.005
+per MB). Proxy data dominates. Session time itself is near-free.
+
+### Per command
+
+| Command | Cloud browser? | Typical cost |
+|---|---|---|
+| `ali login` | yes (~17 MB) | **~$0.09** per login |
+| `ali post-rfq` | yes (~40–80 MB) | **~$0.20–$0.40** per post |
+| `ali browser start` (idle) | yes | $0.002 + idle accrual until stop |
+| `ali status` / `messages` / `read` / `send*` / `download` | no, local | **$0** |
+| `ali rfqs` / `rfq <id>` / `rfq-quotes` | no, local | **$0** |
+| `ali monitor` (one-session full sweep) | no, local | **$0** |
+| `ali keepalive` | no, local | **$0** |
+| `ali logs` / `doctor` / `config` / `logout` | no browser | **$0** |
+
+### Monthly estimates
+
+| Usage pattern | Monthly cost |
+|---|---|
+| Occasional — login 2×/week, no posting | ~$0.70 |
+| Daily sourcing check — login 1×/day + hourly `ali monitor` (all local) | ~$2.60 |
+| Active — login 1×/day, 3 RFQs posted/week | ~$6.00 |
+| Heavy — login 2×/day, 5 RFQs/day | ~$35–50 |
+
+### How to keep the bill near zero
+
+1. **Run `ali keepalive` on a cron** (every 4–8 hours). It refreshes
+   Alibaba cookies using local headless Chromium — free — and prevents
+   a $0.09 `ali login` round-trip when the previous session ages out.
+2. **Don't leave `ali browser start` running.** The 10-minute safety-net
+   timeout kills idle sessions automatically, but `ali browser stop`
+   instantly ends billing if you're done sooner.
+3. **Read/send/RFQ commands never touch the cloud browser.** Run them as
+   often as you want.
+
+### Auditing your own spend
+
+```bash
+curl -s -H "X-Browser-Use-API-Key: $BROWSER_USE_API_KEY" \
+  "https://api.browser-use.com/api/v2/browsers?limit=50" | \
+  jq -r '.items[] | "\(.startedAt[:10])  \(.status)  proxy=$\(.proxyCost[:6])  browser=$\(.browserCost)"'
+```
+
+Browser Use's dashboard has a billing view with monthly totals too.
+Pricing figures above are drawn from real sessions — check your own
+recent sessions to sanity-check, since Browser Use's rates can change.
+
+---
+
 ## Prerequisites
 
 | | |
@@ -37,7 +93,7 @@ CLI tool for automating Alibaba.com buyer-side operations: conversations, messag
 | **Python 3.10+** | Required for the CLI + Playwright |
 | **An Alibaba.com buyer account** | The Alibaba account's login email **must match** the Gmail inbox in step 4 — that's where Alibaba sends the OTP codes |
 | **A Gmail account** | Same address as your Alibaba login. The CLI reads OTP emails from this inbox. |
-| **A Browser Use account** | <https://browser-use.com> — used only for the OTP login step (~$0.06 per login). Get an **API key**, then create a named **profile** in the dashboard. That profile will store your Alibaba session cookies between runs. |
+| **A Browser Use account** | <https://browser-use.com> — used only for the OTP login step (~$0.09 per login, see [What it costs](#what-it-costs)). Get an **API key**, then create a named **profile** in the dashboard. That profile will store your Alibaba session cookies between runs. |
 | **A Google Cloud project** | With the Gmail API enabled. Used to mint an OAuth refresh token so the CLI can read OTP emails. |
 
 ---
